@@ -1,0 +1,33 @@
+{
+  "name": "vmcompiler_nand2tetrix",
+  "version": "1.0.0",
+  "description": "Compiler from VM language to Hack language from the Nand2Tetrix Project.",
+  "main": "index.js",
+  "scripts": {
+    "ts": "node_modules/.bin/tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rodrigo-samenezes/vm_compiler_nand2tetrix.git"
+  },
+  "keywords": [
+    "nodejs",
+    "javscript",
+    "nand2tetrix",
+    "compiler",
+    "assembly",
+    "asm"
+  ],
+  "author": "Rodrigo Menezes (rodrigo.fsamenezes@gmail.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rodrigo-samenezes/vm_compiler_nand2tetrix/issues"
+  },
+  "homepage": "https://github.com/rodrigo-samenezes/vm_compiler_nand2tetrix#readme",
+  "devDependencies": {
+    "@types/node": "^12.12.14",
+    "typescript": "^3.7.3"
+  },
+  "dependencies": {}
+}
