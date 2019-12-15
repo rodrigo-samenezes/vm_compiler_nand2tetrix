@@ -3,6 +3,9 @@ import { VMCommandType } from './VMCommand';
 
 export class CodeWriter {
 
+    private labelsCount: number;
+    private moduleName: string
+
     private segment2pointerMap = {
         local: 'LCL',
         argument: 'ARG',
@@ -13,17 +16,18 @@ export class CodeWriter {
         static: (index: number) => `${this.moduleName}.${index}`,
     }
 
-    private labelsCount: number;
-
-
-
-
-    constructor(private outputStream: fs.WriteStream, private moduleName: string) {
+    constructor(private outputStream: fs.WriteStream) {
+        /*
         this.wln('@256');
         this.wln('D=A');
         this.wln('@SP');
         this.wln('M=D');
+        */
         this.labelsCount = 0;
+    }
+
+    public setModuleName(moduleName: string) {
+        this.moduleName = moduleName;
     }
 
     private getLabelCount(): number {
@@ -36,9 +40,6 @@ export class CodeWriter {
         this.wln('D=M');
         this.wln('A=A-1');
         this.arithmeticFunctions[command]();
-        this.wln('@SP');
-        this.wln('M=M-1');
-
     }
 
     public writePushPop(command: VMCommandType.C_PUSH | VMCommandType.C_POP, segment: string, index: number): void {
@@ -61,7 +62,7 @@ export class CodeWriter {
                     this.wln('M=D');
                     this.wln('@SP');
                     this.wln('M=M+1');
-                case 'local': case 'argument': case 'this': case 'that':
+                case 'local' || 'argument' || 'this' || 'that':
                     this.wln('@' + this.segment2pointerMap[segment]);
                     this.wln('D=M');
                     this.wln('@' + index.toString());

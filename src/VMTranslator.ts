@@ -6,23 +6,24 @@ import { VMCommandType } from './VMCommand';
 
 export class VMTranslator {
 
-    private parser: Parser;
+    
     private codeWriter: CodeWriter
 
-    constructor(private input: string, private output: string) {
-        const inputFileStream = fs.createReadStream(input);
-        const outputFileStream = fs.createWriteStream(output);
-        this.parser = new Parser(inputFileStream);
-        const pathSplit = input.split(path.sep);
-        const moduleName = pathSplit[pathSplit.length - 1].split('.vm').filter((_, i, arr) => i < (arr.length - 1)).join('.vm');
-        this.codeWriter = new CodeWriter(outputFileStream, moduleName);
+    constructor(private outputPath: string) {
+        const outputFileStream = fs.createWriteStream(outputPath);
+        this.codeWriter = new CodeWriter(outputFileStream);
     }   
-
-    public async translate(): Promise<void> {
-        await this.parser.init();
-        while(this.parser.hasMoreCommands()) {
-            this.parser.advance();
-            const cmm = this.parser.getCommand();
+    
+    public async translate(inputPath: string): Promise<void> {
+        const inputFileStream = fs.createReadStream(inputPath);
+        const parser = new Parser(inputFileStream);
+        const pathSplit = inputPath.split(path.sep);
+        const moduleName = pathSplit[pathSplit.length - 1].split('.vm').filter((_, i, arr) => i < (arr.length - 1)).join('.vm');
+        await parser.init();
+        this.codeWriter.setModuleName(moduleName);
+        while(parser.hasMoreCommands()) {
+            parser.advance();
+            const cmm = parser.getCommand();
             if (cmm.type === VMCommandType.C_PUSH || cmm.type === VMCommandType.C_POP){
                 this.codeWriter.writePushPop(cmm.type, cmm.arg1, cmm.arg2);
             }

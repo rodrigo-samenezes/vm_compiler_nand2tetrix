@@ -9,12 +9,13 @@ main();
 async function main() {
 
     let vmFiles: string[] = [];
-
+    let isValidFile: boolean, isFolder: boolean;
+    let _path: string;
     if (process.argv.length > 0) {
-        const _path = process.argv[process.argv.length - 1];
+        _path = process.argv[process.argv.length - 1];
         const stat = fs.statSync(_path);
-        const isValidFile = stat.isFile() && _path.endsWith('.vm');
-        const isFolder = stat.isDirectory();
+        isValidFile = stat.isFile() && _path.endsWith('.vm');
+        isFolder = stat.isDirectory();
         if (!isValidFile && !isFolder) {
             console.error(cColors.FgRed, "ERROR: You must provide a folder or .vm file to be compiled", cColors.Reset);
             process.exit(1);
@@ -27,9 +28,21 @@ async function main() {
 
     console.log('Files to compile: ', vmFiles.length);
 
-    for (const filePath of vmFiles) {
-        const t = new VMTranslator(filePath, filePath.substr(0, filePath.length - 2).concat('.asm'));
-        await t.translate();
+    if (vmFiles.length > 0) {
+        let outputFilePath: string;
+        if (isFolder) {
+            const folderName = _path
+                                .split(path.sep)
+                                .filter((_, i, arr) => i === (arr.length - 1));
+            outputFilePath = path.join(_path, folderName + '.asm');
+        }
+        else {
+            outputFilePath = vmFiles[0].substr(0, vmFiles[0].length - 3).concat('.asm');
+        }
+        for (const filePath of vmFiles) {
+            const t = new VMTranslator(outputFilePath);
+            await t.translate(filePath);
+        }
     }
 
     console.log(cColors.FgGreen, "DONE", cColors.Reset);

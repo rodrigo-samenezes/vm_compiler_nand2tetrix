@@ -22,6 +22,7 @@ export class Parser{
             this.fileReadStream.on('data', (data) => streamData.push(data));
             this.fileReadStream.on('end', () => resolve(Buffer.concat(streamData).toString()));
         });
+        this.fileReadStream.close();
         txt = txt.split("\r").join("");
         let split = txt.split(/\/\/.*\n/); //remove coments
         this.lines = split.join("").split("\n").filter(x => !!x);
@@ -69,4 +70,5 @@ export class Parser{
             throw new Error("Error: Command Type not valid");
         }
     }
+
 }
