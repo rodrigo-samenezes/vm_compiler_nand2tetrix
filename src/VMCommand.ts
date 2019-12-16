@@ -7,4 +7,5 @@ export interface VMCommand {
     type: VMCommandType;
     arg1?: string;
     arg2?: number;
+    literal: string;
 }

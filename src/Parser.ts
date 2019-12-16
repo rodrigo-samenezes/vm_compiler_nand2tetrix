@@ -7,8 +7,20 @@ export class Parser{
     private curLine: number;
     public static readonly vmSymbols = {
         arithmetics: ['add', 'sub', 'neg', 'eq', 'gt', 'lt', 'and', 'or', 'not'],
-        memory: ['push', 'call']
+        others: ['push', 'pop', 'call', 'function', 'label', 'if-goto', 'goto', 'return']
     }
+
+    private readonly notArithmeticalMapper = {
+        push: VMCommandType.C_PUSH,
+        pop: VMCommandType.C_POP,
+        function: VMCommandType.C_FUNCTION,
+        call: VMCommandType.C_CALL,
+        label: VMCommandType.C_LABEL,
+        goto: VMCommandType.C_GOTO,
+        'if-goto': VMCommandType.C_IF,
+        return: VMCommandType.C_RETURN
+    };
+
     private static commandsWithSecondArg: VMCommandType[] = [
         VMCommandType.C_PUSH, VMCommandType.C_POP, VMCommandType.C_FUNCTION, VMCommandType.C_CALL
     ];
@@ -25,7 +37,7 @@ export class Parser{
         this.fileReadStream.close();
         txt = txt.split("\r").join("");
         let split = txt.split(/\/\/.*\n/); //remove coments
-        this.lines = split.join("").split("\n").filter(x => !!x);
+        this.lines = split.join("\n").split("\n").filter(x => !!x);
         this.curLine = -1;
         this.fileReadStream.close();
     }
@@ -44,7 +56,8 @@ export class Parser{
         const symbols = line.split(' ').filter(x => x != '');
         const type = this.indentifyType(symbols[0]);
         const cmm: VMCommand =  {
-            type
+            type,
+            literal: line
         };
         if (type != VMCommandType.C_RETURN) {
             cmm.arg1 = symbols[type === VMCommandType.C_ARITHMETIC ? 0 : 1];
@@ -59,15 +72,13 @@ export class Parser{
         if (Parser.vmSymbols.arithmetics.indexOf(cmm) !== -1) {
             return VMCommandType.C_ARITHMETIC;
         }
-        else if (Parser.vmSymbols.memory.indexOf(cmm) !== -1) {
-            const mapper = {
-                push: VMCommandType.C_PUSH,
-                pop: VMCommandType.C_POP,
-            };
-            return mapper[cmm];
+        else if (Parser.vmSymbols.others.indexOf(cmm) !== -1) {
+            
+            return this.notArithmeticalMapper[cmm];
         }
+        
         else {
-            throw new Error("Error: Command Type not valid");
+            throw new Error("Error: Command Type not valid: '" + cmm + "'");
         }
     }
 

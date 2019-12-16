@@ -13,20 +13,18 @@ export class CodeWriter {
     private segment2pointerMap = {
         local: 'LCL',
         argument: 'ARG',
-        'this': 'THIS',
+        this: 'THIS',
         that: 'THAT',
         temp: (index: number) => `R${index + 5}`,
         pointer: (index: number) => `R${index + 3}`,
-        static: (index: number) => {
-            return this.moduleName + '.' + index;
-        }
+        static: (index: number) => `${this.moduleName}.${index}`,
     }
 
     constructor(private outputStream: fs.WriteStream) {
         this.labelsCount = 0;
         this.callsCount = 0;
         this.returnSubCount = 0;
-        this.currentFunctionName = '';
+        this.writeInit();
     }
 
     public setModuleName(moduleName: string) {
@@ -40,15 +38,193 @@ export class CodeWriter {
         this.wln("@SP");
         this.wln("M=D");
         this.writeCall("Sys.init", 0);
+        this.writeSubRoutineReturn();
+        this.writeSubArithmeticLt();
+        this.writeSubArithmeticGt();
+        this.writeSubArithmeticEq();
+        this.writeSubFrame();
     }
 
+    private writeSubFrame() {
+        this.wln("($FRAME$)");
+        this.wln("@R15");
+        this.wln("M=D");
+    
+        this.internalWritePush("LCL");
+        this.internalWritePush("ARG");
+        this.internalWritePush("THIS");
+        this.internalWritePush("THAT");
+    
+        this.wln("@R15");
+        this.wln("A=M");
+        this.wln("0;JMP");
+    }
+
+    private writeSubRoutineReturn() {
+        this.wln("($RETURN$)")
+        this.wln("@R15")
+        this.wln("M=D")
+
+        this.wln("@LCL"); // FRAME = LCL
+        this.wln("D=M");
+    
+        this.wln("@R13"); // R13 -> FRAME
+        this.wln("M=D");
+    
+        this.wln("@5"); // RET = *(FRAME-5)
+        this.wln("A=D-A");
+        this.wln("D=M");
+        this.wln("@R14"); // R14 -> RET
+        this.wln("M=D");
+    
+        this.wln("@SP"); // *ARG = pop()
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@ARG");
+        this.wln("A=M");
+        this.wln("M=D");
+    
+        this.wln("D=A"); // SP = ARG+1
+        this.wln("@SP");
+        this.wln("M=D+1");
+    
+        this.wln("@R13"); // THAT = *(FRAME-1)
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@THAT");
+        this.wln("M=D");
+    
+        this.wln("@R13"); // THIS = *(FRAME-2)
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@THIS");
+        this.wln("M=D");
+    
+        this.wln("@R13"); // ARG = *(FRAME-3)
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@ARG");
+        this.wln("M=D");
+    
+        this.wln("@R13"); // LCL = *(FRAME-4)
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@LCL");
+        this.wln("M=D");
+    
+        this.wln("@R14"); // goto RET
+        this.wln("A=M");
+        this.wln("0;JMP");
+    
+        this.wln("@R15");
+        this.wln("A=M");
+        this.wln("0;JMP");
+    }
+    
+    private writeSubArithmeticEq() {
+    
+        this.wln("($EQ$)");
+        this.wln("@R15");
+        this.wln("M=D");
+    
+        const label = `JEQ_${this.moduleName}_${this.getLabelCount()}`;
+        this.wln("@SP // eq");
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@SP")
+        this.wln("AM=M-1");
+        this.wln("D=M-D");
+        this.wln("@" + label);
+        this.wln("D;JEQ");
+        this.wln("D=1");
+        this.wln("(" + label + ")");
+        this.wln("D=D-1");
+        this.wln("@SP");
+        this.wln("A=M");
+        this.wln("M=D");
+        this.wln("@SP");
+        this.wln("M=M+1");
+    
+        this.wln("@R15");
+        this.wln("A=M");
+        this.wln("0;JMP");
+    }
+    
+    private writeSubArithmeticGt() {
+        this.wln("($GT$)");
+        this.wln("@R15");
+        this.wln("M=D");
+    
+        const labelCount = this.getLabelCount();
+        const labelTrue = `JGT_TRUE_${this.moduleName}_${labelCount}`;
+        const labelFalse = `JGT_FALSE_${this.moduleName}_${labelCount}`;
+    
+        this.wln("@SP // gt");
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@SP");
+        this.wln("AM=M-1");
+        this.wln("D=M-D");
+        this.wln("@" + labelTrue);
+        this.wln("D;JGT");
+        this.wln("D=0");
+        this.wln("@" + labelFalse);
+        this.wln("0;JMP");
+        this.wln("(" + labelTrue + ")");
+        this.wln("D=-1");
+        this.wln("(" + labelFalse + ")");
+        this.wln("@SP");
+        this.wln("A=M");
+        this.wln("M=D");
+        this.wln("@SP");
+        this.wln("M=M+1");
+    
+        this.wln("@R15");
+        this.wln("A=M");
+        this.wln("0;JMP");
+    }
+    
+    private writeSubArithmeticLt() {
+    
+        this.wln("($LT$)")
+        this.wln("@R15")
+        this.wln("M=D")
+    
+        const labelCount = this.getLabelCount();
+        const labelTrue = `JLT_TRUE_${this.moduleName}_${labelCount}`;
+        const labelFalse = `JLT_FALSE_${this.moduleName}_${labelCount}`;
+    
+        this.wln("@SP // lt");
+        this.wln("AM=M-1");
+        this.wln("D=M");
+        this.wln("@SP");
+        this.wln("AM=M-1");
+        this.wln("D=M-D");
+        this.wln("@" + labelTrue + "");
+        this.wln("D;JLT");
+        this.wln("D=0");
+        this.wln("@" + labelFalse + "");
+        this.wln("0;JMP");
+        this.wln("(" + labelTrue + ")");
+        this.wln("D=-1");
+        this.wln("(" + labelFalse + ")");
+        this.wln("@SP");
+        this.wln("A=M");
+        this.wln("M=D");
+        this.wln("@SP");
+        this.wln("M=M+1");
+    
+        this.wln("@R15");
+        this.wln("A=M");
+        this.wln("0;JMP");
+    }
 
     public writeLabel(label: string) {
-        this.wln(`(${label})`);
+        this.wln(`(${this.currentFunctionName}$${label})`);
     }
 
     public writeGoto(label: string) {
-        this.wln(`@${label}`);
+        this.wln(`@${this.currentFunctionName}$${label}`);
         this.wln("0;JMP");
     }
 
@@ -57,7 +233,7 @@ export class CodeWriter {
         this.wln("AM=M-1");
         this.wln("D=M");
         this.wln("M=0");
-        this.wln(`@${label}`);
+        this.wln(`@(${this.currentFunctionName}$${label})`);
         this.wln("D;JNE");
     }
 
@@ -118,7 +294,14 @@ export class CodeWriter {
         this.internalWritePush("THIS");
         this.internalWritePush("THAT");
 
-        this.wln(`@${numArgs}`); // ARG = SP-n-5
+        const returnFrame = `$RET${this.getReturnSubCount()}`;
+        this.wln(`@${returnFrame}`);
+        this.wln("D=A");
+        this.wln("@$FRAME$");
+        this.wln("0;JMP");
+        this.wln(`(${returnFrame})`);
+
+        this.wln(`@${numArgs}`) // ARG = SP-n-5
         this.wln("D=A");
         this.wln("@5");
         this.wln("D=D+A");
@@ -132,7 +315,9 @@ export class CodeWriter {
         this.wln("@LCL");
         this.wln("M=D");
 
-        this.writeGoto(functionName);
+        //code.WriteGoto(funcName)
+        this.wln(`@${functionName}`);
+        this.wln("0;JMP");
 
         this.wln(`(${returnAddress})`); // (return-address)
     }
@@ -170,17 +355,14 @@ export class CodeWriter {
                     this.wln('M=M+1');
                     break;
                 case 'static': case 'temp': case 'pointer':
-                    const pointer = this.segment2pointerMap[segment](index);
-                    console.log('POINTER', pointer);
-                    this.wln('@' + pointer);
+                    this.wln('@' + this.segment2pointerMap[segment](index));
                     this.wln('D=M');
                     this.wln('@SP');
                     this.wln('A=M');
                     this.wln('M=D');
                     this.wln('@SP');
                     this.wln('M=M+1');
-                    break;
-                case 'local': case 'argument': case 'this': case 'that':
+                case 'local' || 'argument' || 'this' || 'that':
                     this.wln('@' + this.segment2pointerMap[segment]);
                     this.wln('D=M');
                     this.wln('@' + index.toString());
@@ -191,38 +373,6 @@ export class CodeWriter {
                     this.wln('M=D');
                     this.wln('@SP');
                     this.wln('M=M+1');
-                    break;
-            }
-        }
-        else {
-            switch (segment) {
-                case "static": case "temp": case "pointer":
-                    this.wln("@SP");
-                    this.wln("M=M-1");
-                    this.wln("A=M");
-                    this.wln("D=M");
-                    const pointer = this.segment2pointerMap[segment](index); 
-                    this.wln('@' + pointer);
-                    this.wln("M=D");
-                    break;
-                case "local": case "argument": case "this": case "that":
-                    this.wln('@' + this.segment2pointerMap[segment]);
-                    this.wln("D=M");
-                    this.wln(`@${index}`);
-                    this.wln("D=D+A");
-                    this.wln("@R13");
-                    this.wln("M=D");
-                    this.wln("@SP");
-                    this.wln("M=M-1");
-                    this.wln("A=M");
-                    this.wln("D=M");
-                    this.wln("@R13");
-                    this.wln("A=M");
-                    this.wln("M=D");
-                    break;
-                default:
-                    throw new Error("Error");
-                    break;
             }
         }
     }
@@ -238,56 +388,12 @@ export class CodeWriter {
     }
 
     public writeReturn() {
-        this.wln("@LCL"); // FRAME = LCL
-        this.wln("D=M");
-
-        this.wln("@R13"); // R13 -> FRAME
-        this.wln("M=D");
-
-        this.wln("@5"); // RET = *(FRAME-5)
-        this.wln("A=D-A");
-        this.wln("D=M");
-        this.wln("@R14"); // R14 -> RET
-        this.wln("M=D");
-
-        this.wln("@SP"); // *ARG = pop()
-        this.wln("AM=M-1");
-        this.wln("D=M");
-        this.wln("@ARG");
-        this.wln("A=M");
-        this.wln("M=D");
-
-        this.wln("D=A"); // SP = ARG+1
-        this.wln("@SP");
-        this.wln("M=D+1");
-
-        this.wln("@R13"); // THAT = *(FRAME-1)
-        this.wln("AM=M-1");
-        this.wln("D=M");
-        this.wln("@THAT");
-        this.wln("M=D");
-
-        this.wln("@R13"); // THIS = *(FRAME-2)
-        this.wln("AM=M-1");
-        this.wln("D=M");
-        this.wln("@THIS");
-        this.wln("M=D");
-
-        this.wln("@R13"); // ARG = *(FRAME-3)
-        this.wln("AM=M-1");
-        this.wln("D=M");
-        this.wln("@ARG");
-        this.wln("M=D");
-
-        this.wln("@R13"); // LCL = *(FRAME-4)
-        this.wln("AM=M-1");
-        this.wln("D=M");
-        this.wln("@LCL");
-        this.wln("M=D");
-
-        this.wln("@R14"); // goto RET
-        this.wln("A=M");
+        const returnAddress = `$RET${this.getReturnSubCount()}`;
+        this.wln(`@${returnAddress}`);
+        this.wln("D=A");
+        this.wln("@$RETURN$");
         this.wln("0;JMP");
+        this.wln(`(${returnAddress})`);
     }
 
     private wln(str: string): void {
@@ -300,62 +406,56 @@ export class CodeWriter {
         this.outputStream.close();
     }
 
-    private writeBinaryArithmetic() {
-        this.wln('@SP');
-        this.wln('AM=M-1');
-        this.wln('D=M');
-        this.wln('A=A-1');
-    }
-
-    private writeUnaryArithmetic() {
-        this.wln('@SP');
-        this.wln('A=M');
-        this.wln('A=A-1');
-    }
-
     private arithmeticFunctions = {
         add: () => {
-            this.writeBinaryArithmetic();
-            this.wln('M=D+M');
+            this.wln('@SP');
+            this.wln('A=M-1');
+            this.wln('D=M');
+            this.wln('A=A-1');
+            this.wln('M=M+D');
+            this.wln('@SP');
+            this.wln('M=M-1');
         },
         sub: () => {
-            this.writeBinaryArithmetic();
+            this.wln('@SP');
+            this.wln('A=M-1');
+            this.wln('D=M');
+            this.wln('A=A-1');
             this.wln('M=M-D');
+            this.wln('@SP');
+            this.wln('M=M-1');
         },
         eq: () => {
-            const label = `JEQ_${this.moduleName}_${this.getLabelCount()}`;
-            this.wln("@SP // eq");
-            this.wln("AM=M-1");
-            this.wln("D=M");
-            this.wln("@SP")
-            this.wln("AM=M-1");
-            this.wln("D=M-D");
-            this.wln("@" + label);
-            this.wln("D;JEQ");
-            this.wln("D=1");
-            this.wln("(" + label + ")");
-            this.wln("D=D-1");
             this.wln("@SP");
             this.wln("A=M");
-            this.wln("M=D");
-            this.wln("@SP");
-            this.wln("M=M+1");
+            this.wln("A=A-1");
+            this.wln("M=!M");
         },
         neg: () => {
-            this.writeUnaryArithmetic();
-            this.wln('M=-M');
+            this.wln("@SP");
+            this.wln("A=M");
+            this.wln("A=A-1");
+            this.wln("M=-M");
         },
         and: () => {
-            this.writeBinaryArithmetic();
-            this.wln('M=D&M');
+            this.wln("@SP // and");
+            this.wln("AM=M-1");
+            this.wln("D=M");
+            this.wln("A=A-1");
+            this.wln("M=D&M");
         },
         or: () => {
-            this.writeBinaryArithmetic();
-            this.wln('M=D|M');
+            this.wln("@SP // or");
+            this.wln("AM=M-1");
+            this.wln("D=M");
+            this.wln("A=A-1");
+            this.wln("M=D|M");
         },
         not: () => {
-            this.writeUnaryArithmetic();
-            this.wln('M=!M');
+            this.wln("@SP");
+            this.wln("A=M");
+            this.wln("A=A-1");
+            this.wln("M=!M");
         },
         gt: () => {
             const labelCount = this.getLabelCount();
@@ -384,8 +484,8 @@ export class CodeWriter {
         },
         lt: () => {
             const labelCount = this.getLabelCount();
-            const labelTrue = `JLT_TRUE_${this.moduleName}_${labelCount}`;
-            const labelFalse = `JLT_FALSE_${this.moduleName}_${labelCount}`;
+            const labelTrue = `JGT_TRUE_${this.moduleName}_${labelCount}`;
+            const labelFalse = `JGT_FALSE_${this.moduleName}_${labelCount}`;
 
             this.wln('@SP');
             this.wln('AM=M-1');

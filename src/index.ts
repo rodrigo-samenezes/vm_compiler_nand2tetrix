@@ -39,10 +39,12 @@ async function main() {
         else {
             outputFilePath = vmFiles[0].substr(0, vmFiles[0].length - 3).concat('.asm');
         }
+        const t = new VMTranslator(outputFilePath);
+        if (vmFiles.length > 1) t.writeInit();
         for (const filePath of vmFiles) {
-            const t = new VMTranslator(outputFilePath);
             await t.translate(filePath);
         }
+        t.close();
     }
 
     console.log(cColors.FgGreen, "DONE", cColors.Reset);

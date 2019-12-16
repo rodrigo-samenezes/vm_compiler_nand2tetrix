@@ -6,7 +6,13 @@
   "scripts": {
     "start": "node ./dist/index.js",
     "ts": "node_modules/.bin/tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\FunctionCalls\\StaticsTest",
+    "test2": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\FunctionCalls\\FibonacciElement",
+    "test3": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\ProgramFlow\\BasicLoop",
+    "t_fe": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\FunctionCalls\\FibonacciElement",
+    "t_sf": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\FunctionCalls\\SimpleFunction",
+    "t_st": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\FunctionCalls\\StaticsTest",
+    "t_nc": "ts-node ./src/index.ts C:\\Users\\Rodrigo\\Documents\\nand2tetris\\projects\\08\\FunctionCalls\\NestedCall",
     "run": "ts-node ./src/index.ts"
   },
   "repository": {
