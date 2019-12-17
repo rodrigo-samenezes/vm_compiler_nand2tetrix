@@ -28,7 +28,7 @@ export class VMTranslator {
         while (parser.hasMoreCommands()) {
             parser.advance();
             const cmm = parser.getCommand();
-            console.log(moduleName, cmm);
+            //console.log(moduleName, cmm);
             switch (cmm.type) {
                 case VMCommandType.C_PUSH: case VMCommandType.C_POP:
                     this.codeWriter.writePushPop(cmm.type, cmm.arg1, cmm.arg2);

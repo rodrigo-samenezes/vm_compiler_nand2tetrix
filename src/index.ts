@@ -40,7 +40,7 @@ async function main() {
             outputFilePath = vmFiles[0].substr(0, vmFiles[0].length - 3).concat('.asm');
         }
         const t = new VMTranslator(outputFilePath);
-        if (vmFiles.length > 1) t.writeInit();
+        if (vmFiles.length > 1 || (vmFiles.length === 1 && vmFiles[0].endsWith("Sys.vm"))) t.writeInit();
         for (const filePath of vmFiles) {
             await t.translate(filePath);
         }

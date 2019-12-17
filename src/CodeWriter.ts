@@ -30,7 +30,7 @@ export class CodeWriter {
     }
 
     public setModuleName(moduleName: string) {
-        console.log(ConsoleColors.FgYellow, 'SET MODULE', moduleName, ConsoleColors.Reset);
+        //console.log(ConsoleColors.FgYellow, 'SET MODULE', moduleName, ConsoleColors.Reset);
         this.moduleName = moduleName;
     }
 
@@ -171,7 +171,7 @@ export class CodeWriter {
                     break;
                 case 'static': case 'temp': case 'pointer':
                     const pointer = this.segment2pointerMap[segment](index);
-                    console.log('POINTER', pointer);
+                    //console.log('POINTER', pointer);
                     this.wln('@' + pointer);
                     this.wln('D=M');
                     this.wln('@SP');
@@ -291,7 +291,7 @@ export class CodeWriter {
     }
 
     private wln(str: string): void {
-        console.log(str);
+        //console.log(str);
         this.outputStream.write(str + "\n");
     }
 
